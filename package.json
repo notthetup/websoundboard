@@ -13,6 +13,10 @@
     "board",
     "sound"
   ],
+  "devDependencies": {},
   "author": "Chinmay Pendharkar <notthetup@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "eslint": "^1.10.3"
+  }
 }
