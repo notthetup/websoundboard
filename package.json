@@ -4,7 +4,8 @@
   "description": "sound board for the web",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "eslint js/**/*.js"
   },
   "keywords": [
     "web",

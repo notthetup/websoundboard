@@ -1,0 +1,26 @@
+body{
+	background-color: gray;
+}
+
+.header {
+	width: 100vw;
+	height: 10vh;
+	text-align: center;
+}
+
+.container {
+	width: 100vw;
+	height: 90vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.soundbutton{
+	border-radius: 5px;
+	background-color: white;
+	height: 35vh;
+	width: 15vw;
+	margin: 20px
+}

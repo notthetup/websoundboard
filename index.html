@@ -43,10 +43,25 @@
 <body unresolved class="fullbleed layout vertical">
   <span id="browser-sync-binding"></span>
   <template is="dom-bind" id="app"> </template>
+  <div class="header">
+    <h1>Web Sound Board</h1>
+  </div>
+  <div class="container">
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+    <div class="soundbutton"></div>
+  </div>
 
-    <paper-toast id="errorToast">
+    <!-- <paper-toast id="errorToast">
       <span class="toast-hide-button" role="button" tabindex="0" onclick="app.$.toast.hide()">Ok</span>
-    </paper-toast>
+    </paper-toast> -->
 
     <!-- Uncomment next block to enable Service Worker support (1/2) -->
     <!--
@@ -67,8 +82,8 @@
 
   </template>
 
-  <script src="/scripts/app.js"></script>
-  <script src="/scripts/boot.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/boot.js"></script>
 
 </body>
 
