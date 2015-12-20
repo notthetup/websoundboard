@@ -1,0 +1,109 @@
+
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../bower_components/iron-input/iron-input.html">
+
+<!--
+A sound button.
+
+Example:
+
+<sound-button></sound-button>
+
+@element sound-button
+-->
+<dom-module id="sound-button">
+
+  <style>
+  :host {
+  	border-radius: 5px;
+    background-color: white;
+    /*background-color: #AADBFC;*/
+  	height: 200px;
+  	width: 250px;
+  	margin: 20px;
+  }
+
+  #soundname{
+    height: 15%;
+    width: 100%;
+  }
+
+  #waveform{
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    height: 65%;
+    width: 100%;
+  }
+
+  #keyname{
+    height: 18%;
+    width: 100%;
+  }
+
+  paper-input-container{
+    --paper-input-container-underline : {
+      display: none;
+    };
+    --paper-input-container-underline-focus: {
+      display: none;
+    }
+    text-align: center;
+  }
+
+  paper-material{
+    height: 100%;
+    border-radius: 5px;
+  }
+
+  </style>
+
+  <template>
+    <paper-material elevation="2">
+      <div id="soundname">
+        <paper-input-container no-label-float>
+          <label>sound name</label>
+           <input is="iron-input" id="input">
+          {{soundname}}
+        </paper-input-container>
+      </div>
+      <div id="waveform"></div>
+      <div id="soundname">
+        <paper-input-container no-label-float>
+          <label>key</label>
+           <input is="iron-input" id="input">
+          {{key}}
+        </paper-input-container>
+      </div>
+    </paper-material>
+  </template>
+
+</dom-module>
+
+<script>
+
+  (function(){
+    'use strict';
+
+    Polymer({
+
+      is: 'sound-button',
+
+      properties: {
+        key: {
+          type: String,
+          value: ''
+        },
+        soundname: {
+          type: String,
+          value: ''
+        }
+      },
+
+
+    });
+  })();
+
+</script>
