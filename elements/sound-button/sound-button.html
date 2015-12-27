@@ -4,6 +4,10 @@
 <link rel="import" href="../../bower_components/paper-material/paper-material.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input-container.html">
 <link rel="import" href="../../bower_components/iron-input/iron-input.html">
+
+<link rel="import" href="../sound-waveform/sound-waveform.html">
+
+
 <script src="keycode.js"></script>
 
 <!--
@@ -81,7 +85,9 @@ Example:
         <div class="top">
           <div id="soundnnamelabel">{{soundname}}</div>
         </div>
-        <div class="middle"></div>
+        <div class="middle">
+          <sound-waveform id="waveform"></sound-waveform>
+        </div>
         <div class="bottom">{{key}}</div>
       </template>
       <template is="dom-if" if="{{!_isModePlay(mode)}}">
@@ -104,6 +110,7 @@ Example:
 </dom-module>
 
 <script>
+  console.log("starting now");
   (function(){
     'use strict';
 
@@ -235,6 +242,7 @@ Example:
             }
             this._buffer = buffer;
             this._createNewPlayer();
+            this.$$('#waveform').buffer = this._buffer;
           }.bind(this));
         }
       },

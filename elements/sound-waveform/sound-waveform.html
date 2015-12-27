@@ -1,0 +1,106 @@
+
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<!--
+A sound waveform.
+
+Example:
+
+<sound-waveform></sound-waveform>
+
+@element sound-waveform
+-->
+
+<dom-module id="sound-waveform">
+
+	<style>
+		canvas{
+			width: 100%;
+			height: 100%;
+		}
+	</style>
+
+	<template>
+		<canvas id="waveform"></canvas>
+	</template>
+
+</dom-module>
+
+<script>
+	console.log("starting");
+	(function(){
+		'use strict';
+		Polymer({
+
+			is: 'sound-waveform',
+
+			properties: {
+
+				buffer: {
+					type: Object,
+					observer: "_onBufferChange"
+				},
+				waveformColor: String,
+			},
+
+			ready: function(){
+				console.log("sound-waveform ready");
+			},
+
+			_onBufferChange: function(buffer){
+				console.log("buffer changed", buffer);
+				var samples = buffer.getChannelData(0);
+				var canvas = this.$$('#waveform');
+				var width = this.offsetWidth;
+				var height = this.parentElement.offsetHeight;
+
+				if (canvas){
+					var ratio = this._getBackingScale(canvas);
+					canvas.width = Math.floor(width * ratio);
+					canvas.height = Math.floor(height * ratio);
+					canvas.style.width = Math.floor(width) + 'px';
+					canvas.style.height = Math.floor(height) + 'px';
+					canvas.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0);
+
+					var samplesPerPixel = Math.floor(samples.length/width);
+
+					var ctx = canvas.getContext('2d');
+
+					ctx.clearRect(0, 0, width, height);
+					ctx.strokeStyle = this.waveformColor || 'rgba(0,0,0,0.4)';
+					ctx.translate(0, height/2);
+					for (var pixelIndex = 0;pixelIndex < width; pixelIndex++){
+						var sumSq = 0;
+						var sampleCount = 0;
+						var dataIndex = pixelIndex*samplesPerPixel;
+						for (var sampleIndex = 0; sampleIndex < samplesPerPixel; sampleIndex++){
+							var thisSampleIndex = dataIndex + sampleIndex;
+							if (thisSampleIndex < samples.length){
+								sumSq += samples[thisSampleIndex] * samples[thisSampleIndex];
+								sampleCount++;
+							}
+						}
+						var x = pixelIndex;
+						var y = Math.sqrt(sumSq/sampleCount) * (height/2);
+						ctx.beginPath();
+						ctx.moveTo(x, -y);
+						ctx.lineTo(x, y);
+						ctx.stroke();
+					}
+				}
+			},
+			_getBackingScale: function(canvas) {
+          var ctx = canvas.getContext('2d');
+          var dpr = window.devicePixelRatio || 1;
+          var bsr = ctx.webkitBackingStorePixelRatio ||
+          ctx.mozBackingStorePixelRatio ||
+          ctx.msBackingStorePixelRatio ||
+          ctx.oBackingStorePixelRatio ||
+          ctx.backingStorePixelRatio || 1;
+
+          return dpr / bsr;
+        }
+		});
+	})();
+	</script>
