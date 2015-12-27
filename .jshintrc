@@ -6,10 +6,10 @@
   "curly": true,
   "eqeqeq": true,
   "immed": true,
-  "indent": 2,
-  "latedef": true,
+  "indent": "tab",
+  "latedef": false,
   "noarg": true,
-  "quotmark": "single",
+  "quotmark": true,
   "undef": true,
   "unused": true,
   "newcap": false,
@@ -19,6 +19,9 @@
     "Polymer": true,
     "Platform": true,
     "page": true,
-    "app": true
+    "app": true,
+    "AudioContext": true,
+    "File": true,
+    "keycode": true
   }
 }
