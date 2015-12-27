@@ -242,7 +242,7 @@ gulp.task('serve', ['lint', 'styles', 'elements', 'images'], function() {
   browserSync({
     port: 5000,
     notify: false,
-    logPrefix: 'PSK',
+    logPrefix: 'WSB',
     snippetOptions: {
       rule: {
         match: '<span id="browser-sync-binding"></span>',
