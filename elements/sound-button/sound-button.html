@@ -1,0 +1,253 @@
+
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input-container.html">
+<link rel="import" href="../../bower_components/iron-input/iron-input.html">
+<script src="keycode.js"></script>
+
+<!--
+A sound button.
+
+Example:
+
+<sound-button></sound-button>
+
+@element sound-button
+-->
+<dom-module id="sound-button">
+
+  <style>
+  :host {
+  	border-radius: 5px;
+    background-color: white;
+    /*background-color: #AADBFC;*/
+  	height: 200px;
+  	width: 250px;
+  	margin: 20px;
+  }
+
+  .top{
+    height: 15%;
+    width: 100%;
+    color: #212121;
+    font-family: 'Roboto', 'Noto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .middle{
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    height: 65%;
+    width: 100%;
+  }
+
+  .bottom{
+    height: 15%;
+    width: 100%;
+    color: #212121;
+    font-family: 'Roboto', 'Noto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
+    font-size: 2em;
+  }
+
+  paper-input-container{
+    --paper-input-container-underline : {
+      display: none;
+    };
+    --paper-input-container-underline-focus: {
+      display: none;
+    }
+    text-align: center;
+    font-family: 'Roboto', 'Noto', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  paper-material{
+    height: 100%;
+    border-radius: 5px;
+  }
+
+  </style>
+
+  <template>
+    <paper-material elevation="2">
+      <template is="dom-if" if="{{_isModePlay(mode)}}">
+        <div class="top">
+          <div id="soundnnamelabel">{{soundname}}</div>
+        </div>
+        <div class="middle"></div>
+        <div class="bottom">{{key}}</div>
+      </template>
+      <template is="dom-if" if="{{!_isModePlay(mode)}}">
+        <div class="top">
+          <paper-input-container no-label-float>
+            <label>sound name</label>
+             <input is="iron-input" id="input">
+            {{soundname}}
+          </paper-input-container>
+        </div>
+        <div class="middle"></div>
+        <paper-input-container no-label-float>
+          <label>key</label>
+           <input is="iron-input" id="keyname" bind-value="{{key}}">
+        </paper-input-container>
+      </template>
+    </paper-material>
+  </template>
+
+</dom-module>
+
+<script>
+  (function(){
+    'use strict';
+
+    var PLAY_MODE = {
+      TRIGGER : 'trigger',
+      HOLD : 'hold'
+    }
+
+    var BUTTON_STATE = {
+      INIT: 'init',
+      UP : 'up',
+      DOWN : 'down'
+    }
+    var MODE = {
+      EDIT : 'edit',
+      PLAY : 'play'
+    }
+
+    function loadSrcFromURL (audioContext, URL, onLoadCallback){
+      var request = new XMLHttpRequest();
+      request.open('GET', URL, true);
+      request.responseType = 'arraybuffer';
+      request.onload = function () {
+        audioContext.decodeAudioData(request.response, function(buffer){
+          if (typeof onLoadCallback === 'function')
+          onLoadCallback(null, buffer);
+        },function (){
+          if (typeof onLoadCallback === 'function')
+          onLoadCallback(new Error("Decoding Error"), null);
+        });
+      };
+      request.send();
+    }
+
+    Polymer({
+
+      is: 'sound-button',
+
+      properties: {
+        key: {
+          type: String,
+          value: 'C',
+          observer: '_onKeyChange'
+        },
+        soundname: {
+          type: String,
+          value: 'boom'
+        },
+        keyCode: {
+          type: Number,
+          value: 0
+        },
+        mode : {
+          type: String,
+          value: MODE.PLAY
+        },
+        buttonState: {
+          type: String,
+          value : BUTTON_STATE.INIT,
+          observer: "_onButtonStateChange"
+        },
+        playMode: {
+          type: String,
+          value: PLAY_MODE.TRIGGER
+        },
+        src: {
+          type: Object,
+          observer: "_onSrcChange"
+        }
+      },
+
+      created: function(){
+        if (!window.audioContext){
+          window.AudioContext = window.AudioContext || window.webkitAudioContext;
+          window.audioContext = new AudioContext();
+        }
+        this._context = window.audioContext;
+        this._gain = this._context.createGain();
+
+        this._gain.connect(this._context.destination);
+        // TODO Swap to Global Gain
+      },
+
+      _isModePlay: function(mode){
+        return mode === MODE.PLAY;
+      },
+
+      _onKeyChange: function(newValue){
+        if (newValue){
+          if (newValue.length > 1){
+            this.key = newValue.charAt(newValue.length -1);
+          }else{
+            this.keyCode = keycode(newValue);
+          }
+        }
+      },
+
+      _onButtonStateChange: function(newValue){
+        console.log("Button is now", newValue);
+        if (this.playMode === PLAY_MODE.HOLD){
+          if (newValue === BUTTON_STATE.DOWN){
+            if (this._player){
+              this._player.start(0);
+            }
+
+          }else if (newValue === BUTTON_STATE.UP) {
+            if (this._player){
+              this._player.stop(0);
+            }
+          }
+        }else{
+          if (newValue === BUTTON_STATE.UP){
+            if (this._player){
+              this._player.start(0);
+              this._createNewPlayer();
+            }
+          }
+        }
+      },
+
+      _onSrcChange : function(newValue){
+        if (newValue instanceof File){
+
+        }else if (typeof newValue === 'string'){
+          loadSrcFromURL(this._context, newValue, function(err, buffer){
+            if (err){
+              console.error(err);
+              return;
+            }
+            this._buffer = buffer;
+            this._createNewPlayer();
+          }.bind(this));
+        }
+      },
+
+      _createNewPlayer: function(){
+        this._player = this._context.createBufferSource();
+        this._fader = this._context.createGain();
+        this._player.buffer = this._buffer;
+        this._player.loop = this.playMode === PLAY_MODE.HOLD;
+        this._player.connect(this._fader);
+        this._fader.connect(this._gain);
+      }
+    });
+  })();
+
+</script>
