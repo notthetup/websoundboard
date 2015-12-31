@@ -9652,6 +9652,8 @@ for (var alias in aliases) {
 			height: 200px;
 			width: 250px;
 			margin: 20px;
+			font-family: 'Roboto', 'Noto', sans-serif;
+			-webkit-font-smoothing: antialiased;
 		}
 
 		.top {
@@ -9677,8 +9679,7 @@ for (var alias in aliases) {
 			height: 15%;
 			width: 100%;
 			color: #212121;
-			font-family: 'Roboto', 'Noto', sans-serif;
-			-webkit-font-smoothing: antialiased;
+
 			text-align: center;
 			font-size: 2em;
 		}
@@ -9692,7 +9693,7 @@ for (var alias in aliases) {
 				display: none;
 			}
 			text-align: center;
-			font-family: 'Roboto',
+
 			'Noto',
 			sans-serif;
 			-webkit-font-smoothing: antialiased;
@@ -9702,9 +9703,25 @@ for (var alias in aliases) {
 			height: 100%;
 			border-radius: 5px;
 		}
+
+		#dragoverlay{
+			z-index: 1;
+			border-radius: 5px;
+			background-color: white;
+			position: absolute;
+			width: inherit;
+			height: inherit;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		}
+
 	</style>
 
 	<template>
+		<div id="dragoverlay" hidden$="{{!showDragOverlay}}">
+			<span>Drop file here to add sound</span>
+		</div>
 		<paper-material elevation="2">
 			<template is="dom-if" if="{{_isModePlay(mode)}}">
 				<div class="top">
@@ -9773,6 +9790,22 @@ for (var alias in aliases) {
 			request.send();
 		}
 
+		function loadSrcFromFile(audioContext, file, onLoadCallback) {
+			var reader = new FileReader();
+			reader.onload = function() {
+				audioContext.decodeAudioData(reader.result, function(buffer) {
+					if (typeof onLoadCallback === 'function') {
+						onLoadCallback(null, buffer);
+					}
+				}, function() {
+					if (typeof onLoadCallback === 'function') {
+						onLoadCallback(new Error('Decoding Error'), null);
+					}
+				});
+			};
+			reader.readAsArrayBuffer(file);
+		}
+
 		Polymer({
 
 			is: 'sound-button',
@@ -9780,7 +9813,7 @@ for (var alias in aliases) {
 			properties: {
 				key: {
 					type: String,
-					value: 'C',
+					value: '',
 					observer: '_onKeyChange'
 				},
 				soundname: {
@@ -9807,6 +9840,10 @@ for (var alias in aliases) {
 				src: {
 					type: Object,
 					observer: '_onSrcChange'
+				},
+				showDragOverlay: {
+					type: Boolean,
+					value: false
 				}
 			},
 
@@ -9859,19 +9896,23 @@ for (var alias in aliases) {
 			},
 
 			_onSrcChange: function(newValue) {
+				var loadFunction;
 				if (newValue instanceof File) {
-
+					loadFunction = loadSrcFromFile;
 				} else if (typeof newValue === 'string') {
-					loadSrcFromURL(this._context, newValue, function(err, buffer) {
-						if (err) {
-							console.error(err);
-							return;
-						}
-						this._buffer = buffer;
-						this._createNewPlayer();
-						this.$$('#waveform').buffer = this._buffer;
-					}.bind(this));
+					loadFunction = loadSrcFromURL;
 				}
+
+				loadFunction(this._context, newValue, function(err, buffer) {
+					if (err) {
+						console.error(err);
+						return;
+					}
+					this._buffer = buffer;
+					this._createNewPlayer();
+					this.$$('#waveform').buffer = this._buffer;
+				}.bind(this));
+
 			},
 
 			_createNewPlayer: function() {
