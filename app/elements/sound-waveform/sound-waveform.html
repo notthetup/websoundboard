@@ -115,7 +115,6 @@ Example:
 		},
 
 		_renderWaveform: function(buffer) {
-			console.log('buffer changed', buffer);
 			var samples = buffer.getChannelData(0);
 			var canvas = this.$$('#waveform');
 			var width = this.offsetWidth;

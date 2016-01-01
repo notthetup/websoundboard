@@ -18,6 +18,12 @@
 		document.addEventListener('dragenter', addDragHoverIfFile);
 		document.addEventListener('dragover', addDragHoverIfFile);
 
+		window.setTimeout(function() {
+			forEach(buttons, function(thisButton, index) {
+				thisButton.soundname = 'sound ' + index;
+			});
+		}, 350);
+
 		function keyPressHandler(evt) {
 			if (document.activeElement.tagName !== 'BODY') {
 				return;
