@@ -10218,7 +10218,6 @@ for (var alias in aliases) {
 		},
 
 		_renderWaveform: function(buffer) {
-			console.log('buffer changed', buffer);
 			var samples = buffer.getChannelData(0);
 			var canvas = this.$$('#waveform');
 			var width = this.offsetWidth;
@@ -10484,7 +10483,7 @@ for (var alias in aliases) {
 
 				soundname: {
 					type: String,
-					value: 'boom'
+					value: ''
 				},
 
 				keyCode: {
