@@ -10118,13 +10118,35 @@ for (var alias in aliases) {
 <dom-module id="sound-waveform" assetpath="sound-waveform/">
 
 	<style>
-		canvas{
-			width: 100%;
-			height: 100%;
-		}
+	:host{
+		width: 100%;
+		height: 100%;
+	}
+
+	canvas{
+		width: 100%;
+		height: 100%;
+	}
+
+	@keyframes play {
+		0% { width: 0%; }
+		33% { width: 33%; }
+		66% { width: 66%; }
+		100% { width: 100%; }
+	}
+
+	#line{
+		position: absolute;
+		width: 0px;
+		height: 100%;
+		border-right: 2px solid red;
+		background-color: rgba(0,0,0,0.2);
+		animation-timing-function: linear;
+	}
 	</style>
 
 	<template>
+		<div id="line"></div>
 		<canvas id="waveform"></canvas>
 	</template>
 
@@ -10218,6 +10240,7 @@ for (var alias in aliases) {
 		},
 
 		_renderWaveform: function(buffer) {
+			console.log('buffer changed', buffer);
 			var samples = buffer.getChannelData(0);
 			var canvas = this.$$('#waveform');
 			var width = this.offsetWidth;
@@ -10274,21 +10297,14 @@ for (var alias in aliases) {
 		_onStateChange: function(newValue) {
 			if (this.playMode === PLAY_MODE.HOLD) {
 				if (newValue === STATE.PLAY) {
-					if (this._player) {
-						this._player.start(0);
-					}
-
+					this._playSound();
 				} else if (newValue === STATE.STOP) {
-					if (this._player) {
-						this._player.stop(0);
-					}
+					this._pauseSound();
 				}
 			} else {
 				if (newValue === STATE.PLAY) {
-					if (this._player) {
-						this._player.start(0);
-						this._createNewPlayer(this._buffer);
-					}
+					this._playSound();
+					this._createNewPlayer(this._buffer);
 				}
 			}
 		},
@@ -10317,16 +10333,41 @@ for (var alias in aliases) {
 		},
 
 		_createNewPlayer: function(buffer) {
+			if (!buffer) {
+				return;
+			}
 			this._player = this._context.createBufferSource();
 			this._fader = this._context.createGain();
 			this._player.buffer = buffer;
 			this._player.loop = this.playMode === PLAY_MODE.HOLD;
 			this._player.connect(this._fader);
 			this._fader.connect(this._gain);
+		},
+
+		_playSound: function() {
+			if (this._player) {
+				this._player.start(0);
+				if (this.$.line.style.animationPlayState === 'paused') {
+					this.$.line.style.animationDuration = this._buffer.duration + 's';
+					this.$.line.style.animationName = 'play';
+				}else {
+					this.$.line.style.animationDuration = 'none';
+					this.$.line.style.animationName = 'none';
+					var triggerReflow = this.$.line.offsetWidth; /* jshint ignore:line */
+					this.$.line.style.animationDuration = this._buffer.duration + 's';
+					this.$.line.style.animationName = 'play';
+				}
+			}
+		},
+
+		_pauseSound: function() {
+			if (this._player) {
+				this._player.stop(0);
+			}
 		}
 
 	});
-	})();
+})();
 </script>
 <dom-module id="sound-button" assetpath="sound-button/">
 
@@ -10372,6 +10413,7 @@ for (var alias in aliases) {
 			border-bottom: 1px solid black;
 			height: 65%;
 			width: 100%;
+			position: relative;
 		}
 
 		.bottom {
