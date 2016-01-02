@@ -244,10 +244,16 @@ Example:
 		_playSound: function() {
 			if (this._player) {
 				this._player.start(0);
-				this.$.line.style.animationName = 'none';
-				this.$.line.style.width = '0px';
-				this.$.line.style.animationDuration = this._buffer.duration + 's';
-				this.$.line.style.animationName = 'play';
+				if (this.$.line.style.animationPlayState === 'paused') {
+					this.$.line.style.animationDuration = this._buffer.duration + 's';
+					this.$.line.style.animationName = 'play';
+				}else {
+					this.$.line.style.animationDuration = 'none';
+					this.$.line.style.animationName = 'none';
+					var triggerReflow = this.$.line.offsetWidth; /* jshint ignore:line */
+					this.$.line.style.animationDuration = this._buffer.duration + 's';
+					this.$.line.style.animationName = 'play';
+				}
 			}
 		},
 
