@@ -10126,23 +10126,55 @@ for (var alias in aliases) {
 	canvas{
 		width: 100%;
 		height: 100%;
+		background: #333333;
 	}
 
 	@keyframes play {
-		0% { width: 0%; }
-		33% { width: 33%; }
-		66% { width: 66%; }
-		100% { width: 100%; }
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(0);
+		}
 	}
 
-	#line{
+	#line {
 		position: absolute;
-		width: 0px;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		width: 100%;
 		height: 100%;
-		border-right: 2px solid red;
-		background-color: rgba(0,0,0,0.2);
-		animation-timing-function: linear;
+		overflow: hidden;
 	}
+
+	#line::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		border-right: 1px solid rgba(116, 249, 205, 0.4);
+		transform: translateX(-100%);
+		background: linear-gradient(90deg, rgba(116, 249, 205, 0) 85%, rgba(116, 249, 205, 0.1) 93%, rgba(116, 249, 205, 0.2));
+
+
+		animation-timing-function: linear;
+		animation-duration: inherit;
+	}
+
+	#line.playing.started::after {
+		animation-name: none;
+		animation-play-state: paused;
+	}
+
+	#line.playing::after {
+		animation-name: play;
+		animation-play-state: running;
+	}
+
 	</style>
 
 	<template>
@@ -10239,6 +10271,13 @@ for (var alias in aliases) {
 			// TODO Swap to Global Gain
 		},
 
+		ready: function() {
+			this.$.line.addEventListener('transitionend', function() {
+				this.$.line.classList.remove('playing');
+				this.$.line.classList.remove('started');
+			}.bind(this));
+		},
+
 		_renderWaveform: function(buffer) {
 			console.log('buffer changed', buffer);
 			var samples = buffer.getChannelData(0);
@@ -10259,7 +10298,7 @@ for (var alias in aliases) {
 				var ctx = canvas.getContext('2d');
 
 				ctx.clearRect(0, 0, width, height);
-				ctx.strokeStyle = this.waveformColor || 'rgba(0,0,0,0.4)';
+				ctx.strokeStyle = this.waveformColor || 'rgba(116, 249, 205,1.0)';
 				ctx.translate(0, height / 2);
 				for (var pixelIndex = 0; pixelIndex < width; pixelIndex++) {
 					var sumSq = 0;
@@ -10347,22 +10386,21 @@ for (var alias in aliases) {
 		_playSound: function() {
 			if (this._player) {
 				this._player.start(0);
-				if (this.$.line.style.animationPlayState === 'paused') {
-					this.$.line.style.animationDuration = this._buffer.duration + 's';
-					this.$.line.style.animationName = 'play';
-				}else {
-					this.$.line.style.animationDuration = 'none';
-					this.$.line.style.animationName = 'none';
-					var triggerReflow = this.$.line.offsetWidth; /* jshint ignore:line */
-					this.$.line.style.animationDuration = this._buffer.duration + 's';
-					this.$.line.style.animationName = 'play';
-				}
+				this.$.line.style.animationDuration = '0s';
+				this.$.line.classList.add('started');
+				this.$.line.classList.add('playing');
+				this.$.line.style.offsetWidth = this.$.line.offsetWidth;
+				this.$.line.style.animationDuration = this._buffer.duration + 's';
+				this.$.line.classList.remove('started');
 			}
 		},
 
 		_pauseSound: function() {
 			if (this._player) {
 				this._player.stop(0);
+				this.$.line.style.animationDuration = '0s';
+				this.$.line.classList.remove('playing');
+				this.$.line.classList.remove('started');
 			}
 		}
 
