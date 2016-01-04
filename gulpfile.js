@@ -152,6 +152,9 @@ gulp.task('copy', function() {
     ])
     .pipe(gulp.dest(dist('elements')));
 
+  var audio = gulp.src(['app/audio/*.*'])
+      .pipe(gulp.dest(dist('audio')));
+
   var swBootstrap = gulp.src(['bower_components/platinum-sw/bootstrap/*.js'])
     .pipe(gulp.dest(dist('elements/bootstrap')));
 
@@ -162,7 +165,7 @@ gulp.task('copy', function() {
     .pipe($.rename('elements.vulcanized.html'))
     .pipe(gulp.dest(dist('elements')));
 
-  return merge(app, bower, elements, vulcanized, swBootstrap, swToolbox)
+  return merge(app, bower, elements, vulcanized, swBootstrap, swToolbox, audio)
     .pipe($.size({
       title: 'copy'
     }));
