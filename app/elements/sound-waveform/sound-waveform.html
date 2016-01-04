@@ -317,6 +317,11 @@ Example:
 			if (!buffer) {
 				return;
 			}
+
+			if (this._player) {
+				this._player.onended = null;
+			}
+
 			this._player = this._context.createBufferSource();
 			this._fader = this._context.createGain();
 			this._player.buffer = buffer;
@@ -371,6 +376,9 @@ Example:
 
 		_updateCounter: function() {
 			this.currentTime = (this._context.currentTime - this._counterStartTime);
+			if (this.currentTime > this.totalTime) {
+				this.currentTime = this.totalTime;
+			}
 			if (this.state === STATE.PLAY) {
 				window.requestAnimationFrame(this._updateCounter.bind(this));
 			}
