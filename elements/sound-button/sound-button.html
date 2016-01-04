@@ -247,6 +247,7 @@ Example:
 				if (this.mode === 'play') {
 					this.mode = 'edit';
 				}else {
+					this.$$('#waveplayer').resetAnimation();
 					this.mode = 'play';
 				}
 			}

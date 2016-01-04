@@ -10159,13 +10159,12 @@ for (var alias in aliases) {
 		border-right: 1px solid rgba(116, 249, 205, 0.4);
 		transform: translateX(-100%);
 		background: linear-gradient(90deg, rgba(116, 249, 205, 0) 85%, rgba(116, 249, 205, 0.1) 93%, rgba(116, 249, 205, 0.2));
-
-
 		animation-timing-function: linear;
 		animation-duration: inherit;
+		animation-play-state: paused;
 	}
 
-	#line.playing.started::after {
+	#line.playing.paused::after {
 		animation-name: none;
 		animation-play-state: paused;
 	}
@@ -10272,10 +10271,14 @@ for (var alias in aliases) {
 		},
 
 		ready: function() {
-			this.$.line.addEventListener('transitionend', function() {
-				this.$.line.classList.remove('playing');
-				this.$.line.classList.remove('started');
+			this.$.line.addEventListener('animationend', function() {
+			this.resetAnimation();
 			}.bind(this));
+		},
+
+		resetAnimation: function() {
+			this.$.line.classList.remove('playing');
+			this.$.line.classList.remove('paused');
 		},
 
 		_renderWaveform: function(buffer) {
@@ -10387,11 +10390,11 @@ for (var alias in aliases) {
 			if (this._player) {
 				this._player.start(0);
 				this.$.line.style.animationDuration = '0s';
-				this.$.line.classList.add('started');
+				this.$.line.classList.add('paused');
 				this.$.line.classList.add('playing');
 				this.$.line.style.offsetWidth = this.$.line.offsetWidth;
 				this.$.line.style.animationDuration = this._buffer.duration + 's';
-				this.$.line.classList.remove('started');
+				this.$.line.classList.remove('paused');
 			}
 		},
 
@@ -10400,7 +10403,7 @@ for (var alias in aliases) {
 				this._player.stop(0);
 				this.$.line.style.animationDuration = '0s';
 				this.$.line.classList.remove('playing');
-				this.$.line.classList.remove('started');
+				this.$.line.classList.remove('paused');
 			}
 		}
 
@@ -10634,6 +10637,7 @@ for (var alias in aliases) {
 				if (this.mode === 'play') {
 					this.mode = 'edit';
 				}else {
+					this.$$('#waveplayer').resetAnimation();
 					this.mode = 'play';
 				}
 			}
