@@ -133,7 +133,7 @@ Example:
 					<div class="toplable" id="soundnnamelabel">{{soundname}}</div>
 					<iron-icon class="topicon" id="editbutton" icon="icons:create" title="edit" on-click="_toggleEditMode"></iron-icon>
 				</div>
-				<div class="middle">
+				<div class="middle" on-mousedown="keyPressHandler", on-mouseup="keyPressHandler">
 					<sound-waveform id="waveplayer" src="{{src}}"></sound-waveform>
 				</div>
 				<div class="bottom">{{key}}</div>
@@ -216,11 +216,15 @@ Example:
 					return;
 				}
 
+				if (event.keyCode && this.keyCode !== event.keyCode) {
+					return;
+				}
+
 				var waveplayer = this.$$('#waveplayer');
 
-				if (event.type === 'keydown' && this.keyCode === event.keyCode) {
+				if (event.type === 'keydown' || event.type === 'mousedown' || event.type === 'touchstart') {
 					waveplayer.keydown(event);
-				}else if (event.type === 'keyup' &&  this.keyCode === event.keyCode) {
+				}else if (event.type === 'keyup' ||  event.type === 'mouseup' || event.type === 'touchend') {
 					waveplayer.keyup(event);
 				}
 			},
