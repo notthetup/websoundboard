@@ -236,7 +236,6 @@ Example:
 		},
 
 		_renderWaveform: function(buffer) {
-			console.log('buffer changed', buffer);
 			var samples = buffer.getChannelData(0);
 			var canvas = this.$$('#waveform');
 			var width = this.offsetWidth;
@@ -372,12 +371,11 @@ Example:
 
 		_updateCounter: function() {
 			this.currentTime = (this._context.currentTime - this._counterStartTime);
-			console.log(this.state);
 			if (this.state === STATE.PLAY) {
 				window.requestAnimationFrame(this._updateCounter.bind(this));
 			}
 		}
-		
+
 	});
 })();
 </script>
