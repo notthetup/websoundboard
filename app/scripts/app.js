@@ -7,16 +7,26 @@
 	});
 
 	window.addEventListener('load', function() {
+		var dragCount = 0;
 		var buttons = document.querySelectorAll('sound-button');
 
 		document.addEventListener('keydown', keyPressHandler);
 		document.addEventListener('keyup', keyPressHandler);
 
-		document.addEventListener('dragend', removeDragHover);
-		// document.body.addEventListener('dragleave', removeDragHover);
+		// document.addEventListener('dragleave', removeDragHover);
+		document.addEventListener('drop', function(event) {
+			event.preventDefault();
+			forEach(buttons, function(thisButton) {
+				thisButton.showDragOverlay = false;
+			});
+		});
 
-		document.addEventListener('dragenter', addDragHoverIfFile);
-		document.addEventListener('dragover', addDragHoverIfFile);
+		document.addEventListener('dragover', function(event) {
+			event.preventDefault();
+		});
+
+		document.addEventListener('dragenter', dragenterDragleave);
+		document.addEventListener('dragleave', dragenterDragleave);
 
 		window.setTimeout(function() {
 			forEach(buttons, function(thisButton, index) {
@@ -24,28 +34,28 @@
 			});
 		}, 350);
 
+		function dragenterDragleave(e) {
+			e.preventDefault();
+			dragCount += (e.type === 'dragenter' ? 1 : -1);
+			if (dragCount === 1) {
+				if (containsFiles(event)) {
+					forEach(buttons, function(thisButton) {
+						thisButton.showDragOverlay = true;
+					});
+				}
+			} else if (dragCount === 0) {
+				forEach(buttons, function(thisButton) {
+					thisButton.showDragOverlay = false;
+				});
+			}
+		}
+
 		function keyPressHandler(evt) {
 			if (document.activeElement.tagName !== 'BODY') {
 				return;
 			}
 			forEach(buttons, function(thisButton) {
 				thisButton.keyPressHandler(evt);
-			});
-		}
-
-		function addDragHoverIfFile(event) {
-			event.preventDefault();
-			if (containsFiles(event)) {
-				forEach(buttons, function(thisButton) {
-					thisButton.showDragOverlay = true;
-				});
-			}
-		}
-
-		function removeDragHover(event) {
-			event.preventDefault();
-			forEach(buttons, function(thisButton) {
-				thisButton.showDragOverlay = false;
 			});
 		}
 

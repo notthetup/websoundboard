@@ -71,10 +71,32 @@ Example:
 		animation-play-state: running;
 	}
 
+	#label{
+		position: absolute;
+		bottom: 0%;
+		color: white;
+		font-size: 0.7em;
+		width: 100%;
+	}
+
+	#currenttime{
+		padding-left: 5px;
+		float: left;
+	}
+
+	#totaltime{
+		padding-right: 5px;
+		float: right;
+	}
+
 	</style>
 
 	<template>
 		<div id="line"></div>
+		<div id="label">
+			<span id="currenttime">{{_formatTime(currentTime)}}</span>
+			<span id="totaltime">{{_formatTime(totalTime)}}</span>
+		</div>
 		<canvas id="waveform"></canvas>
 	</template>
 
@@ -94,6 +116,14 @@ Example:
 		PLAY: 'play',
 		STOP: 'stop'
 	};
+
+	function pad(num, size) {
+		var s = num + '';
+		while (s.length < size) {
+			s = '0' + s;
+		}
+		return s;
+	}
 
 	function loadSrcFromURL(audioContext, URL, onLoadCallback) {
 		var request = new XMLHttpRequest();
@@ -138,8 +168,7 @@ Example:
 
 			state: {
 				type: String,
-				value: STATE.INIT,
-				observer: '_onStateChange'
+				value: STATE.INIT
 			},
 
 			playMode: {
@@ -150,6 +179,16 @@ Example:
 			src: {
 				type: Object,
 				observer: '_onSrcChange'
+			},
+
+			currentTime: {
+				type: Number,
+				value: 0
+			},
+
+			totalTime: {
+				type: Number,
+				value: 0
 			},
 
 			waveformColor: String,
@@ -176,6 +215,24 @@ Example:
 		resetAnimation: function() {
 			this.$.line.classList.remove('playing');
 			this.$.line.classList.remove('paused');
+		},
+
+		keydown: function() {
+			if (this.playMode === PLAY_MODE.HOLD) {
+				this._playSound();
+			} else {
+				this._playSound();
+				this._createNewPlayer(this._buffer);
+			}
+		},
+
+		keyup: function() {
+			if (this.state === STATE.STOP || this.state === STATE.INIT) {
+				return;
+			}
+			if (this.playMode === PLAY_MODE.HOLD) {
+				this._pauseSound();
+			}
 		},
 
 		_renderWaveform: function(buffer) {
@@ -233,21 +290,6 @@ Example:
 			return dpr / bsr;
 		},
 
-		_onStateChange: function(newValue) {
-			if (this.playMode === PLAY_MODE.HOLD) {
-				if (newValue === STATE.PLAY) {
-					this._playSound();
-				} else if (newValue === STATE.STOP) {
-					this._pauseSound();
-				}
-			} else {
-				if (newValue === STATE.PLAY) {
-					this._playSound();
-					this._createNewPlayer(this._buffer);
-				}
-			}
-		},
-
 		_onSrcChange: function(newValue) {
 
 			var loadFunction;
@@ -265,6 +307,7 @@ Example:
 					return;
 				}
 				this._buffer = buffer;
+				this.totalTime = this._buffer.duration;
 				this._createNewPlayer(this._buffer);
 				this._renderWaveform(this._buffer);
 			}.bind(this));
@@ -279,6 +322,9 @@ Example:
 			this._fader = this._context.createGain();
 			this._player.buffer = buffer;
 			this._player.loop = this.playMode === PLAY_MODE.HOLD;
+			this._player.onended = function() {
+				this.state = STATE.STOP;
+			}.bind(this);
 			this._player.connect(this._fader);
 			this._fader.connect(this._gain);
 		},
@@ -286,6 +332,10 @@ Example:
 		_playSound: function() {
 			if (this._player) {
 				this._player.start(0);
+				this.state = STATE.PLAY;
+				this._startCounter();
+
+				// Animate line
 				this.$.line.style.animationDuration = '0s';
 				this.$.line.classList.add('paused');
 				this.$.line.classList.add('playing');
@@ -298,12 +348,36 @@ Example:
 		_pauseSound: function() {
 			if (this._player) {
 				this._player.stop(0);
+				this.state = STATE.STOP;
+
+				// Animate line
 				this.$.line.style.animationDuration = '0s';
 				this.$.line.classList.remove('playing');
 				this.$.line.classList.remove('paused');
 			}
-		}
+		},
 
+		_formatTime: function(timeInSeconds) {
+			var minutes = Math.floor(timeInSeconds / 60);
+			var seconds = Math.floor(timeInSeconds % 60);
+			var milliseconds = parseInt((timeInSeconds - (minutes * 60) - seconds) * 100);
+
+			return minutes + ':' + pad(seconds,2) + ':' + pad(milliseconds,2);
+		},
+
+		_startCounter: function() {
+			window.requestAnimationFrame(this._updateCounter.bind(this));
+			this._counterStartTime = this._context.currentTime;
+		},
+
+		_updateCounter: function() {
+			this.currentTime = (this._context.currentTime - this._counterStartTime);
+			console.log(this.state);
+			if (this.state === STATE.PLAY) {
+				window.requestAnimationFrame(this._updateCounter.bind(this));
+			}
+		}
+		
 	});
 })();
 </script>
