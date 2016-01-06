@@ -8992,6 +8992,99 @@ is separate from validation, and `allowed-pattern` does not affect how the input
   */
 
 </script>
+<script>function AudioPlayer(context) {
+
+	if (!context) {
+		window.AudioContext = window.AudioContext || window.webkitAudioContext;
+		context = new AudioContext();
+	}
+
+	this._context = context;
+
+	this._player = this._context.createBufferSource();
+	this._fader = this._context.createGain();
+	this._player.onended = function() {
+		this.state = 'stop';
+	}.bind(this);
+	this._player.connect(this._fader);
+
+	this._currentPosition = 0;
+	this._startTime = 0;
+
+	this._gain = 1;
+	this._fadeIn = 0.05;
+	this._fadeOut = 0.3;
+
+	this._buffer = null;
+	Object.defineProperty(this, 'buffer', {
+		set: function(newValue) {
+			if (newValue instanceof AudioBuffer) {
+				this._buffer = newValue;
+				this._player.buffer = this._buffer;
+			}
+		},
+		get: function() {
+			return this._buffer;
+		}
+	});
+
+	this._mode = 'trigger';
+	Object.defineProperty(this, 'mode', {
+		set: function(newValue) {
+			if (newValue === 'trigger' || newValue === 'hold') {
+				this._player.loop = newValue === 'hold';
+				this._mode = newValue;
+			}
+		},
+		get: function() {
+			return this._mode;
+		}
+	});
+}
+
+AudioPlayer.prototype.start = function() {
+
+	this._startTime = this._context.currentTime;
+
+	this._fader.gain.setValueAtTime(0, this._context.currentTime);
+	this._fader.gain.linearRampToValueAtTime(this._gain, this._context.currentTime + this._fadeIn);
+
+	this._player.start(this._context.currentTime, this._currentPosition);
+
+	this._fader.gain.setValueAtTime(this._gain,
+		this._context.currentTime + this.buffer.duration - this._fadeOut);
+	this._fader.gain.linearRampToValueAtTime(0, this._context.currentTime + this.buffer.duration);
+
+	if (this.mode === 'trigger') {
+		this._player = this._context.createBufferSource();
+		this._fader = this._context.createGain();
+		this._player.buffer = this._buffer;
+		this._player.loop = this.playMode === 'hold';
+		this._player.onended = function() {
+			this.state = 'stop';
+		}.bind(this);
+		this._player.connect(this._fader);
+		this._fader.connect(this._outputNode);
+
+		this._currentPosition = 0;
+	}
+};
+
+AudioPlayer.prototype.pause = function() {
+	this._fader.gain.setValueAtTime(this._gain, this._context.currentTime);
+	this._fader.gain.linearRampToValueAtTime(0, this._context.currentTime + this._fadeOut);
+	this._player.stop(this._context.currentTime + this._fadeOut);
+
+	this._currentPosition = this._context.currentTime - this._startTime;
+};
+
+AudioPlayer.prototype.connect = function(outputNode) {
+	this._outputNode = outputNode;
+	this._fader.connect(this._outputNode);
+};
+
+window.AudioPlayer = AudioPlayer;
+</script>
 
 
 <script>// Source : https://github.com/timoxley/keycode
@@ -10276,7 +10369,8 @@ for (var alias in aliases) {
 
 			playMode: {
 				type: String,
-				value: PLAY_MODE.TRIGGER
+				value: PLAY_MODE.TRIGGER,
+				observer: '_onPlayModeChange'
 			},
 
 			src: {
@@ -10303,15 +10397,13 @@ for (var alias in aliases) {
 				window.audioContext = new AudioContext();
 			}
 			this._context = window.audioContext;
-			this._gain = this._context.createGain();
-
-			this._gain.connect(this._context.destination);
-			// TODO Swap to Global Gain
+			this._player = new AudioPlayer(this._context);
+			this._player.connect(this._context.destination);
 		},
 
 		ready: function() {
 			this.$.line.addEventListener('animationend', function() {
-			this.resetAnimation();
+				this.resetAnimation();
 			}.bind(this));
 		},
 
@@ -10321,12 +10413,7 @@ for (var alias in aliases) {
 		},
 
 		keydown: function() {
-			if (this.playMode === PLAY_MODE.HOLD) {
-				this._playSound();
-			} else {
-				this._playSound();
-				this._createNewPlayer(this._buffer);
-			}
+			this._playSound();
 		},
 
 		keyup: function() {
@@ -10409,36 +10496,22 @@ for (var alias in aliases) {
 					return;
 				}
 				this._buffer = buffer;
+				this._player.buffer = this._buffer;
 				this.totalTime = this._buffer.duration;
-				this._createNewPlayer(this._buffer);
 				this._renderWaveform(this._buffer);
 			}.bind(this));
 
 		},
 
-		_createNewPlayer: function(buffer) {
-			if (!buffer) {
-				return;
+		_onPlayModeChange: function(newMode) {
+			if (newMode === PLAY_MODE.TRIGGER || newMode === PLAY_MODE.HOLD) {
+				this._player.mode = newMode;
 			}
-
-			if (this._player) {
-				this._player.onended = null;
-			}
-
-			this._player = this._context.createBufferSource();
-			this._fader = this._context.createGain();
-			this._player.buffer = buffer;
-			this._player.loop = this.playMode === PLAY_MODE.HOLD;
-			this._player.onended = function() {
-				this.state = STATE.STOP;
-			}.bind(this);
-			this._player.connect(this._fader);
-			this._fader.connect(this._gain);
 		},
 
 		_playSound: function() {
 			if (this._player) {
-				this._player.start(0);
+				this._player.start();
 				this.state = STATE.PLAY;
 				this._startCounter();
 
@@ -10454,7 +10527,7 @@ for (var alias in aliases) {
 
 		_pauseSound: function() {
 			if (this._player) {
-				this._player.stop(0);
+				this._player.stop();
 				this.state = STATE.STOP;
 
 				// Animate line
