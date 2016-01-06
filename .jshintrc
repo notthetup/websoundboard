@@ -22,6 +22,8 @@
     "app": true,
     "AudioContext": true,
     "File": true,
-    "keycode": true
+    "keycode": true,
+    "AudioPlayer": true,
+    "AudioBuffer": true
   }
 }
