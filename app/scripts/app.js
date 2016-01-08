@@ -9,6 +9,7 @@
 	window.addEventListener('load', function() {
 		var dragCount = 0;
 		var buttons = document.querySelectorAll('sound-button');
+		var editor = document.querySelector('sound-editor');
 
 		document.addEventListener('keydown', keyPressHandler);
 		document.addEventListener('keyup', keyPressHandler);
@@ -28,6 +29,14 @@
 		document.addEventListener('dragenter', dragenterDragleave);
 		document.addEventListener('dragleave', dragenterDragleave);
 
+		forEach(buttons, function(thisButton, index) {
+			thisButton.addEventListener('edit', function(evt) {
+				evt.detail.buttonIndex = index;
+				editor.open(evt.detail);
+			});
+		});
+
+		// Temporary names
 		window.setTimeout(function() {
 			forEach(buttons, function(thisButton, index) {
 				thisButton.soundname = 'sound ' + index;
