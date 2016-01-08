@@ -1,7 +1,7 @@
 
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../../bower_components/paper-input/paper-input-container.html">
 <link rel="import" href="../../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../../bower_components/iron-input/iron-input.html">
@@ -9,34 +9,33 @@
 <link rel="import" href="../sound-waveform/sound-waveform.html">
 
 
-<script src="keycode.js"></script>
-
 <!--
-A sound button.
+A sound editor.
 
 Example:
 
-<sound-button></sound-button>
+<sound-editor></sound-editor>
 
-@element sound-button
+@element sound-editor
 -->
-<dom-module id="sound-button">
+<dom-module id="sound-editor">
 
 	<style>
 		:host {
-			border-radius: 5px;
 			background-color: white;
 			/*background-color: #AADBFC;*/
-			height: 200px;
-			width: 250px;
-			margin: 20px;
 			font-family: 'Roboto', 'Noto', sans-serif;
 			-webkit-font-smoothing: antialiased;
 		}
 
+		#dialog{
+			border-radius: 5px;
+			width: 50vw;
+			height: 50vh;
+		}
+
 		.top {
-			height: 15%;
-			width: 100%;
+			height: 5%;
 			color: #212121;
 			display: flex;
 			align-items: center;
@@ -50,7 +49,7 @@ Example:
 
 		.topicon{
 			position: absolute;
-			top: 3%;
+			top: 6%;
 			left: 90%;
 			--iron-icon-height: 16px;
 			--iron-icon-width: 16px;
@@ -62,16 +61,16 @@ Example:
 		.middle {
 			border-top: 1px solid black;
 			border-bottom: 1px solid black;
-			height: 65%;
+			padding: 0;
+			height: 60%;
 			width: 100%;
 			position: relative;
 		}
 
 		.bottom {
-			height: 15%;
+			height: 5%;
 			width: 100%;
 			color: #212121;
-
 			text-align: center;
 			font-size: 2em;
 		}
@@ -91,23 +90,6 @@ Example:
 			-webkit-font-smoothing: antialiased;
 		}
 
-		paper-material {
-			height: 100%;
-			border-radius: 5px;
-		}
-
-		#dragoverlay{
-			z-index: 1;
-			border-radius: 5px;
-			background-color: white;
-			position: absolute;
-			width: inherit;
-			height: inherit;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-		}
-
 		#savebutton{
 			--iron-icon-height: 20px;
     	--iron-icon-width: 20px;
@@ -124,31 +106,38 @@ Example:
 	</style>
 
 	<template>
-		<div id="dragoverlay" hidden$="{{!showDragOverlay}}">
-			<span>Drop file here to add sound</span>
-		</div>
-		<paper-material elevation="2">
+		<paper-dialog id="dialog" modal >
 			<div class="top">
-				<div class="toplable" id="soundnnamelabel">{{soundname}}</div>
-				<iron-icon class="topicon" id="editbutton" icon="icons:create" title="edit" on-click="_toggleEditMode"></iron-icon>
+				<paper-input-container class="toplable"  no-label-float>
+					<label>sound name</label>
+					<input is="iron-input" id="input" bind-value="{{soundname}}">
+				</paper-input-container>
+				<iron-icon class="topicon" id="savebutton" icon="icons:save" title="edit" on-click="close"></iron-icon>
 			</div>
-			<div class="middle" on-mousedown="keyPressHandler", on-mouseup="keyPressHandler">
+			<div class="middle">
 				<sound-waveform id="waveplayer" src="{{src}}"></sound-waveform>
 			</div>
-			<div class="bottom">{{key}}</div>
-		</paper-material>
+			<paper-input-container no-label-float>
+				<label>key</label>
+				<input is="iron-input" id="keyname" bind-value="{{key}}">
+			</paper-input-container>
+		</paper-dialog>
 	</template>
 
 </dom-module>
 
 <script>
 	(function() {
-
 		'use strict';
+
+		var MODE = {
+			EDIT: 'edit',
+			PLAY: 'play'
+		};
 
 		Polymer({
 
-			is: 'sound-button',
+			is: 'sound-editor',
 
 			properties: {
 				key: {
@@ -167,9 +156,9 @@ Example:
 					value: 0
 				},
 
-				showDragOverlay: {
-					type: Boolean,
-					value: false
+				mode: {
+					type: String,
+					value: MODE.PLAY
 				},
 
 				src: {
@@ -178,36 +167,22 @@ Example:
 			},
 
 			ready: function() {
-				this.addEventListener('drop', function(event) {
-					event.preventDefault();
-					this.src = event.dataTransfer.files[0];
-				});
+
 			},
 
-			keyPressHandler: function(event) {
-
-				if (event.altkey || event.ctrlKey || event.metaKey || event.shiftKey) {
-					return;
-				}
-
-				if (event.keyCode && this.keyCode !== event.keyCode) {
-					return;
-				}
-
-				var waveplayer = this.$$('#waveplayer');
-
-				if (event.type === 'keydown' || event.type === 'mousedown' || event.type === 'touchstart') {
-					waveplayer.keydown(event);
-				}else if (event.type === 'keyup' ||  event.type === 'mouseup' || event.type === 'touchend') {
-					waveplayer.keyup(event);
-				}
+			open: function(detail) {
+				console.log(detail);
+				this.soundname = detail.soundname;
+				this.src = detail.src;
+				this.key = detail.key;
+				this._buttonIndex = detail.buttonIndex;
+				this.$.dialog.open();
 			},
 
-			_toggleEditMode: function() {
-				this.fire('edit', {
-					soundname: this.soundname,
-					key: this.key,
-					src: this.src
+			close: function() {
+				this.$.dialog.close();
+				this.fire('save', {
+					buttonIndex: this._buttonIndex
 				});
 			},
 
