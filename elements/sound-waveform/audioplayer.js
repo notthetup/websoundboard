@@ -26,7 +26,17 @@ function AudioPlayer(context) {
 		set: function(newValue) {
 			if (newValue instanceof AudioBuffer) {
 				this._buffer = newValue;
-				this._player.buffer = this._buffer;
+				if (!this._player.buffer) {
+					this._player.buffer = this._buffer;
+				} else {
+					this._player = this._context.createBufferSource();
+					this._player.buffer = this._buffer;
+					this._player.loop = this.playMode === 'hold';
+					this._player.onended = function() {
+						this.state = 'stop';
+					}.bind(this);
+					this._player.connect(this._fader);
+				}
 			}
 		},
 		get: function() {

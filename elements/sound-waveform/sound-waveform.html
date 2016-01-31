@@ -74,6 +74,7 @@ Example:
 
 	#label{
 		position: absolute;
+		display: flex;
 		bottom: 0%;
 		color: white;
 		font-size: 0.7em;
@@ -82,12 +83,17 @@ Example:
 
 	#currenttime{
 		padding-left: 5px;
-		float: left;
+		text-align: left;
 	}
 
 	#totaltime{
 		padding-right: 5px;
-		float: right;
+		margin-left: auto;
+	}
+
+	#starttime,#endtime{
+		flex: 1;
+		text-align: center;
 	}
 
 	</style>
@@ -95,8 +101,12 @@ Example:
 	<template>
 		<div id="line"></div>
 		<div id="label">
-			<span id="currenttime">{{_formatTime(currentTime)}}</span>
-			<span id="totaltime">{{_formatTime(totalTime)}}</span>
+			<div id="currenttime">{{_formatTime(currentTime)}}</div>
+			<template is="dom-if" if="{{_showStartEndTimes(startTime,endTime)}}">
+				<div id="starttime">{{_formatTime(startTime)}}</div>
+				<div id="endtime">{{_formatTime(endTime)}}</div>
+			</template>
+			<div id="totaltime">{{_formatTime(totalTime)}}</div>
 		</div>
 		<canvas id="waveform"></canvas>
 	</template>
@@ -188,6 +198,16 @@ Example:
 				value: 0
 			},
 
+			startTime: {
+				type: Number,
+				value: 0
+			},
+
+			endTime: {
+				type: Number,
+				value: 0
+			},
+
 			totalTime: {
 				type: Number,
 				value: 0
@@ -231,24 +251,27 @@ Example:
 		},
 
 		_renderWaveform: function(buffer) {
-			var samples = buffer.getChannelData(0);
 			var canvas = this.$$('#waveform');
-			var width = this.offsetWidth;
-			var height = this.parentElement.offsetHeight;
+			var ctx;
+			var ratio;
 
-			if (canvas) {
-				var ratio = this._getBackingScale(canvas);
+			if (buffer && canvas) {
+				var samples = buffer ? buffer.getChannelData(0) : 0;
+				var width = this.offsetWidth;
+				var height = this.parentElement.offsetHeight;
+
+				ctx = canvas.getContext('2d');
+				ratio = this._getBackingScale(canvas);
 				canvas.width = Math.floor(width * ratio);
 				canvas.height = Math.floor(height * ratio);
 				canvas.style.width = Math.floor(width) + 'px';
 				canvas.style.height = Math.floor(height) + 'px';
-				canvas.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0);
+				ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 
-				var samplesPerPixel = Math.floor(samples.length / width);
-
-				var ctx = canvas.getContext('2d');
+				var samplesPerPixel = Math.floor(samples.length / width) || 0;
 
 				ctx.clearRect(0, 0, width, height);
+
 				ctx.strokeStyle = this.waveformColor || 'rgba(116, 249, 205,1.0)';
 				ctx.translate(0, height / 2);
 				for (var pixelIndex = 0; pixelIndex < width; pixelIndex++) {
@@ -269,8 +292,13 @@ Example:
 					ctx.lineTo(x, y);
 					ctx.stroke();
 				}
+			}else if (canvas) {
+				ctx = canvas.getContext('2d');
+				ratio = this._getBackingScale(canvas);
+				ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
 			}
-		},
+	},
 
 		_getBackingScale: function(canvas) {
 			var ctx = canvas.getContext('2d');
@@ -292,6 +320,7 @@ Example:
 			} else if (typeof newValue === 'string') {
 				loadFunction = loadSrcFromURL;
 			}else {
+				this._renderWaveform();
 				return;
 			}
 
@@ -304,6 +333,7 @@ Example:
 				this._player.buffer = this._buffer;
 				this.totalTime = this._buffer.duration;
 				this._renderWaveform(this._buffer);
+				this.fire('sourceloaded', {buffer: this._buffer});
 			}.bind(this));
 
 		},
@@ -363,6 +393,10 @@ Example:
 			if (this.state === STATE.PLAY) {
 				window.requestAnimationFrame(this._updateCounter.bind(this));
 			}
+		},
+
+		_showStartEndTimes: function(startTime, endTime) {
+			return startTime !== 0 || endTime !== 0;
 		}
 
 	});

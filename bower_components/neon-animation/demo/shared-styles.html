@@ -8,34 +8,39 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 
-<link rel="import" href="../paper-styles/shadow.html">
-
-<dom-module id="paper-material-shared-styles">
+<dom-module id="shared-styles">
   <template>
     <style>
-      :host {
-        display: block;
-        position: relative;
+      .red-100 {
+        background: var(--google-red-100);
       }
 
-      :host([elevation="1"]) {
-        @apply(--shadow-elevation-2dp);
+      .yellow-100 {
+        background: var(--google-yellow-100);
       }
 
-      :host([elevation="2"]) {
-        @apply(--shadow-elevation-4dp);
+      .blue-100 {
+        background: var(--google-blue-100);
       }
 
-      :host([elevation="3"]) {
-        @apply(--shadow-elevation-6dp);
+      .green-100 {
+        background: var(--google-green-100);
       }
 
-      :host([elevation="4"]) {
-        @apply(--shadow-elevation-8dp);
+      .red-300 {
+        background: var(--google-red-300);
       }
 
-      :host([elevation="5"]) {
-        @apply(--shadow-elevation-16dp);
+      .yellow-300 {
+        background: var(--google-yellow-300);
+      }
+
+      .blue-300 {
+        background: var(--google-blue-300);
+      }
+
+      .green-300 {
+        background: var(--google-green-300);
       }
     </style>
   </template>

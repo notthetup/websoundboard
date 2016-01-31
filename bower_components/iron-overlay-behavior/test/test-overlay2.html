@@ -1,4 +1,3 @@
-<!doctype html>
 <!--
 @license
 Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
@@ -8,23 +7,43 @@ The complete set of contributors may be found at http://polymer.github.io/CONTRI
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
-<html>
-<head>
 
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+<link rel="import" href="../../polymer/polymer.html">
 
-  <title>iron-checked-element-behavior</title>
+<link rel="import" href="../iron-overlay-behavior.html">
 
-  <script src="../webcomponentsjs/webcomponents-lite.js"></script>
+<dom-module id="test-overlay2">
 
-  <link rel="import" href="../polymer/polymer.html">
-  <link rel="import" href="../iron-component-page/iron-component-page.html">
+  <style>
 
-</head>
-<body>
+    :host {
+      background: white;
+      color: black;
+      border: 1px solid black;
+    }
 
-  <iron-component-page></iron-component-page>
+  </style>
 
-</body>
-</html>
+  <template>
+    <content></content>
+  </template>
+
+</dom-module>
+
+<script>
+
+(function() {
+
+  Polymer({
+
+    is: 'test-overlay2',
+
+    behaviors: [
+      Polymer.IronOverlayBehavior
+    ]
+
+  });
+
+})();
+
+</script>

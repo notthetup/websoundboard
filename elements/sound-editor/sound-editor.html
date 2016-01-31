@@ -103,6 +103,87 @@ Example:
 			visibility: visible;
 		}
 
+		/*Reset range slider styles*/
+		input[type=range] {
+			-webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+			width: 100%; /* Specific width is required for Firefox. */
+			background: transparent;
+		}
+
+		input[type=range]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+		}
+
+		input[type=range]:focus {
+			outline: none; /* Removes the blue border. You should probably do some kind of focus styling for accessibility reasons though. */
+		}
+
+		input[type=range]::-ms-track {
+			width: 100%;
+			cursor: pointer;
+			background: transparent; /* Hides the slider so custom styles can be added */
+			border-color: transparent;
+			color: transparent;
+		}
+
+		/*Range slider styling*/
+
+		section.range-slider {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			width: 100%;
+			height: 100%;
+			text-align: center;
+		}
+
+		section.range-slider input {
+			pointer-events: none;
+			position: absolute;
+			overflow: hidden;
+			outline: none;
+			top: 0;
+			left: -2px;
+			width: 100%;
+			height: 100%;
+			background-color: transparent;
+		}
+
+		section.range-slider input::-webkit-slider-thumb {
+			pointer-events: all;
+			position: relative;
+			z-index: 1;
+			outline: 0;
+			width: 3px;
+			height: 300px;
+			background: rgba(255, 255, 255, 0.5);
+		}
+
+		section.range-slider input::-moz-range-thumb {
+			pointer-events: all;
+			position: relative;
+			z-index: 10;
+			-moz-appearance: none;
+			width: 3px;
+			height: 300px;
+			background: rgba(255, 255, 255, 0.5);
+		}
+
+		section.range-slider input::-moz-range-track {
+			position: relative;
+			z-index: -1;
+			background-color: rgba(0, 0, 0, 1);
+			border: 0;
+		}
+		section.range-slider input:last-of-type::-moz-range-track {
+			-moz-appearance: none;
+			background: none transparent;
+			border: 0;
+		}
+		section.range-slider input[type=range]::-moz-focus-outer {
+			border: 0;
+		}
+
 	</style>
 
 	<template>
@@ -116,6 +197,10 @@ Example:
 			</div>
 			<div class="middle">
 				<sound-waveform id="waveplayer" src="{{src}}"></sound-waveform>
+				<section class="range-slider">
+					<input id="trimstart" on-input="_onTrimChange" type="range" value="0.0" min="0" max="{{_totalTime}}" step="0.01">
+					<input id="trimend" on-input="_onTrimChange" type="range" value="{{_totalTime}}" min="0" max="{{_totalTime}}" step="0.01">
+				</section>
 			</div>
 			<paper-input-container no-label-float>
 				<label>key</label>
@@ -163,15 +248,21 @@ Example:
 
 				src: {
 					type: Object,
+				},
+
+				_totalTime: {
+					type: Number,
+					value: 0
 				}
 			},
 
 			ready: function() {
-
+				this.$.waveplayer.addEventListener('sourceloaded', function(evt) {
+					this._totalTime = evt.detail.buffer.duration;
+				}.bind(this));
 			},
 
 			open: function(detail) {
-				console.log(detail);
 				this.soundname = detail.soundname;
 				this.src = detail.src;
 				this.key = detail.key;
@@ -193,6 +284,14 @@ Example:
 					} else {
 						this.keyCode = keycode(newValue);
 					}
+				}
+			},
+
+			_onTrimChange: function(evt) {
+				if (evt.target.id === 'trimstart') {
+					this.$.waveplayer.startTime = parseFloat(evt.target.value);
+				} else {
+					this.$.waveplayer.endTime = parseFloat(evt.target.value);
 				}
 			}
 		});
