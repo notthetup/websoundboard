@@ -60,12 +60,16 @@
 		}
 
 		function keyPressHandler(evt) {
-			if (document.activeElement.tagName !== 'BODY') {
-				return;
+
+			if (document.activeElement.tagName === 'BODY') {
+				forEach(buttons, function(thisButton) {
+					thisButton.keyPressHandler(evt);
+				});
+			}else if (document.activeElement.tagName === 'PAPER-DIALOG'){
+				if (evt.keyCode === 27) {
+					editor.close();
+				}
 			}
-			forEach(buttons, function(thisButton) {
-				thisButton.keyPressHandler(evt);
-			});
 		}
 
 		function containsFiles(event) {
