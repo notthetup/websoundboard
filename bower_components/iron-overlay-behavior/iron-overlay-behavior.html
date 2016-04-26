@@ -135,6 +135,18 @@ context. You should place this element as a child of `<body>` whenever possible.
         value: function() {
           return this._onCaptureKeydown.bind(this);
         }
+      },
+
+      _boundOnCaptureFocus: {
+        type: Function,
+        value: function() {
+          return this._onCaptureFocus.bind(this);
+        }
+      },
+
+      /** @type {?Node} */
+      _focusedChild: {
+        type: Object
       }
 
     },
@@ -152,10 +164,13 @@ context. You should place this element as a child of `<body>` whenever possible.
     },
 
     get _focusNode() {
-      return Polymer.dom(this).querySelector('[autofocus]') || this;
+      return this._focusedChild || Polymer.dom(this).querySelector('[autofocus]') || this;
     },
 
     ready: function() {
+      // with-backdrop need tabindex to be set in order to trap the focus.
+      // If it is not set, IronOverlayBehavior will set it, and remove it if with-backdrop = false.
+      this.__shouldRemoveTabIndex = false;
       this._ensureSetup();
     },
 
@@ -164,9 +179,12 @@ context. You should place this element as a child of `<body>` whenever possible.
       if (this._callOpenedWhenReady) {
         this._openedChanged();
       }
+      this._observer = Polymer.dom(this).observeNodes(this._onNodesChange);
     },
 
     detached: function() {
+      Polymer.dom(this).unobserveNodes(this._observer);
+      this._observer = null;
       this.opened = false;
       this._manager.trackBackdrop(this);
       this._manager.removeOverlay(this);
@@ -198,9 +216,10 @@ context. You should place this element as a child of `<body>` whenever possible.
 
     /**
      * Cancels the overlay.
+     * @param {?Event} event The original event
      */
-    cancel: function() {
-      var cancelEvent = this.fire('iron-overlay-canceled', undefined, {cancelable: true});
+    cancel: function(event) {
+      var cancelEvent = this.fire('iron-overlay-canceled', event, {cancelable: true});
       if (cancelEvent.defaultPrevented) {
         return;
       }
@@ -223,7 +242,6 @@ context. You should place this element as a child of `<body>` whenever possible.
         this.removeAttribute('aria-hidden');
       } else {
         this.setAttribute('aria-hidden', 'true');
-        Polymer.dom(this).unobserveNodes(this._observer);
       }
 
       // wait to call after ready only if we're initially open
@@ -265,6 +283,14 @@ context. You should place this element as a child of `<body>` whenever possible.
     },
 
     _withBackdropChanged: function() {
+      // If tabindex is already set, no need to override it.
+      if (this.withBackdrop && !this.hasAttribute('tabindex')) {
+        this.setAttribute('tabindex', '-1');
+        this.__shouldRemoveTabIndex = true;
+      } else if (this.__shouldRemoveTabIndex) {
+        this.removeAttribute('tabindex');
+        this.__shouldRemoveTabIndex = false;
+      }
       if (this.opened) {
         this._manager.trackBackdrop(this);
         if (this.withBackdrop) {
@@ -298,18 +324,28 @@ context. You should place this element as a child of `<body>` whenever possible.
     _toggleListeners: function () {
       this._toggleListener(this.opened, document, 'tap', this._boundOnCaptureClick, true);
       this._toggleListener(this.opened, document, 'keydown', this._boundOnCaptureKeydown, true);
+      this._toggleListener(this.opened, document, 'focus', this._boundOnCaptureFocus, true);
     },
 
     // tasks which must occur before opening; e.g. making the element visible
     _prepareRenderOpened: function() {
+
       this._manager.addOverlay(this);
 
+      // Needed to calculate the size of the overlay so that transitions on its size
+      // will have the correct starting points.
       this._preparePositioning();
       this.fit();
       this._finishPositioning();
 
       if (this.withBackdrop) {
         this.backdropElement.prepare();
+      }
+
+      // Safari will apply the focus to the autofocus element when displayed for the first time,
+      // so we blur it. Later, _applyFocus will set the focus if necessary.
+      if (this.noAutoFocus && document.activeElement === this._focusNode) {
+        this._focusNode.blur();
       }
     },
 
@@ -330,22 +366,24 @@ context. You should place this element as a child of `<body>` whenever possible.
     },
 
     _finishRenderOpened: function() {
-      // focus the child node with [autofocus]
+      // This ensures the overlay is visible before we set the focus
+      // (by calling _onIronResize -> refit).
+      this.notifyResize();
+      // Focus the child node with [autofocus]
       this._applyFocus();
 
-      this._observer = Polymer.dom(this).observeNodes(this.notifyResize);
       this.fire('iron-overlay-opened');
     },
 
     _finishRenderClosed: function() {
-      // hide the overlay and remove the backdrop
+      // Hide the overlay and remove the backdrop.
       this.resetFit();
       this.style.display = 'none';
       this._manager.removeOverlay(this);
 
       this._applyFocus();
-
       this.notifyResize();
+
       this.fire('iron-overlay-closed', this.closingReason);
     },
 
@@ -358,8 +396,9 @@ context. You should place this element as a child of `<body>` whenever possible.
     _finishPositioning: function() {
       this.style.display = 'none';
       this.style.transform = this.style.webkitTransform = '';
-      // force layout to avoid application of transform
-      /** @suppress {suspiciousCode} */ this.offsetWidth;
+      // Force layout layout to avoid application of transform.
+      // Set offsetWidth to itself so that compilers won't remove it.
+      this.offsetWidth = this.offsetWidth;
       this.style.transition = this.style.webkitTransition = '';
     },
 
@@ -370,15 +409,19 @@ context. You should place this element as a child of `<body>` whenever possible.
         }
       } else {
         this._focusNode.blur();
+        this._focusedChild = null;
         this._manager.focusOverlay();
       }
     },
 
     _onCaptureClick: function(event) {
       if (this._manager.currentOverlay() === this &&
-          !this.noCancelOnOutsideClick &&
           Polymer.dom(event).path.indexOf(this) === -1) {
-        this.cancel();
+        if (this.noCancelOnOutsideClick) {
+          this._applyFocus();
+        } else {
+          this.cancel(event);
+        }
       }
     },
 
@@ -387,13 +430,37 @@ context. You should place this element as a child of `<body>` whenever possible.
       if (this._manager.currentOverlay() === this &&
           !this.noCancelOnEscKey &&
           event.keyCode === ESC) {
-        this.cancel();
+        this.cancel(event);
+      }
+    },
+
+    _onCaptureFocus: function (event) {
+      if (this._manager.currentOverlay() === this &&
+          this.withBackdrop) {
+        var path = Polymer.dom(event).path;
+        if (path.indexOf(this) === -1) {
+          event.stopPropagation();
+          this._applyFocus();
+        } else {
+          this._focusedChild = path[0];
+        }
       }
     },
 
     _onIronResize: function() {
       if (this.opened) {
         this.refit();
+      }
+    },
+
+    /**
+     * @protected
+     * Will call notifyResize if overlay is opened.
+     * Can be overridden in order to avoid multiple observers on the same node.
+     */
+    _onNodesChange: function() {
+      if (this.opened) {
+        this.notifyResize();
       }
     }
 
@@ -406,6 +473,7 @@ context. You should place this element as a child of `<body>` whenever possible.
  * Fired when the `iron-overlay` is canceled, but before it is closed.
  * Cancel the event to prevent the `iron-overlay` from closing.
  * @event iron-overlay-canceled
+ * @param {?Event} event The event in case the user pressed ESC or clicked outside the overlay
  */
 
 /**

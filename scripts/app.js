@@ -1,1 +1,111 @@
-function webComponentsLoaded(){window.webComponentsReady=!0}!function(e){"use strict";window.addEventListener("WebComponentsReady",function(){console.log("WebComponents Ready!")}),window.addEventListener("load",function(){function n(e){e.preventDefault(),d+="dragenter"===e.type?1:-1,1===d?o(event)&&r(a,function(e){e.showDragOverlay=!0}):0===d&&r(a,function(e){e.showDragOverlay=!1})}function t(n){"BODY"===e.activeElement.tagName&&r(a,function(e){e.keyPressHandler(n)})}function o(e){if(e.dataTransfer.types)for(var n=0;n<e.dataTransfer.types.length;n++)if("Files"===e.dataTransfer.types[n])return!0;return!1}function r(e,n,t){for(var o=0;o<e.length;o++)n.call(t,e[o],o,e)}var d=0,a=e.querySelectorAll("sound-button"),i=e.querySelector("sound-editor");e.addEventListener("keydown",t),e.addEventListener("keyup",t),e.addEventListener("drop",function(e){e.preventDefault(),r(a,function(e){e.showDragOverlay=!1})}),e.addEventListener("dragover",function(e){e.preventDefault()}),e.addEventListener("dragenter",n),e.addEventListener("dragleave",n),r(a,function(e,n){e.addEventListener("edit",function(e){e.detail.buttonIndex=n,i.open(e.detail)})}),window.setTimeout(function(){r(a,function(e,n){e.soundname="sound "+n})},350)})}(document);var webComponentsSupported="registerElement"in document&&"import"in document.createElement("link")&&"content"in document.createElement("template");if(webComponentsSupported){console.log("WebComponents Supported");var readyEvent=new Event("WebComponentsReady");window.dispatchEvent(readyEvent),webComponentsLoaded()}else{var script=document.createElement("script");script.async=!0,script.src="./bower_components/webcomponentsjs/webcomponents-lite.min.js",script.onload=webComponentsLoaded,document.head.appendChild(script)}
+
+(function(document) {
+	'use strict';
+
+	window.addEventListener('WebComponentsReady', function() {
+		console.log('WebComponents Ready!');
+	});
+
+	window.addEventListener('load', function() {
+		var dragCount = 0;
+		var buttons = document.querySelectorAll('sound-button');
+		var editor = document.querySelector('sound-editor');
+
+		document.addEventListener('keydown', keyPressHandler);
+		document.addEventListener('keyup', keyPressHandler);
+
+		// document.addEventListener('dragleave', removeDragHover);
+		document.addEventListener('drop', function(event) {
+			event.preventDefault();
+			forEach(buttons, function(thisButton) {
+				thisButton.showDragOverlay = false;
+			});
+		});
+
+		document.addEventListener('dragover', function(event) {
+			event.preventDefault();
+		});
+
+		document.addEventListener('dragenter', dragenterDragleave);
+		document.addEventListener('dragleave', dragenterDragleave);
+
+		forEach(buttons, function(thisButton, index) {
+			thisButton.addEventListener('edit', function(evt) {
+				evt.detail.buttonIndex = index;
+				editor.open(evt.detail);
+			});
+		});
+
+		// Temporary names
+		window.setTimeout(function() {
+			forEach(buttons, function(thisButton, index) {
+				thisButton.soundname = 'sound ' + index;
+			});
+		}, 350);
+
+		function dragenterDragleave(e) {
+			e.preventDefault();
+			dragCount += (e.type === 'dragenter' ? 1 : -1);
+			if (dragCount === 1) {
+				if (containsFiles(event)) {
+					forEach(buttons, function(thisButton) {
+						thisButton.showDragOverlay = true;
+					});
+				}
+			} else if (dragCount === 0) {
+				forEach(buttons, function(thisButton) {
+					thisButton.showDragOverlay = false;
+				});
+			}
+		}
+
+		function keyPressHandler(evt) {
+			if (document.activeElement.tagName !== 'BODY') {
+				return;
+			}
+			forEach(buttons, function(thisButton) {
+				thisButton.keyPressHandler(evt);
+			});
+		}
+
+		function containsFiles(event) {
+			if (event.dataTransfer.types) {
+				for (var i = 0; i < event.dataTransfer.types.length; i++) {
+					if (event.dataTransfer.types[i] === 'Files') {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		function forEach(array, callback, scope) {
+			for (var i = 0; i < array.length; i++) {
+				callback.call(scope, array[i], i, array); // passes back stuff we need
+			}
+		}
+	});
+})(document);
+
+var webComponentsSupported = (
+	'registerElement' in document &&
+	'import' in document.createElement('link') &&
+	'content' in document.createElement('template'));
+
+function webComponentsLoaded() {
+	// window.Polymer = window.Polymer || {dom: 'shadow'};
+	window.webComponentsReady = true;
+}
+
+if (!webComponentsSupported) {
+	var script = document.createElement('script');
+	script.async = true;
+	script.src = './bower_components/webcomponentsjs/webcomponents-lite.min.js';
+	script.onload = webComponentsLoaded;
+	document.head.appendChild(script);
+} else {
+	console.log('WebComponents Supported');
+	var readyEvent = new Event('WebComponentsReady');
+	window.dispatchEvent(readyEvent);
+	webComponentsLoaded();
+}
