@@ -235,10 +235,16 @@ Example:
 		resetAnimation: function() {
 			this.$.line.classList.remove('playing');
 			this.$.line.classList.remove('paused');
+			if (this.playMode === PLAY_MODE.HOLD) {
+				this.$.line.classList.add('playing');
+				this.$.line.classList.add('paused');
+			}
 		},
 
 		keydown: function() {
-			this._playSound();
+			if (this.playMode !== PLAY_MODE.HOLD || this.state !== STATE.PLAY) {
+				this._playSound();
+			}
 		},
 
 		keyup: function() {
@@ -332,8 +338,10 @@ Example:
 				this._buffer = buffer;
 				this._player.buffer = this._buffer;
 				this.totalTime = this._buffer.duration;
+				this._counterStartValue = 0;
 				this._renderWaveform(this._buffer);
 				this.fire('sourceloaded', {buffer: this._buffer});
+				this.state = STATE.STOP;
 			}.bind(this));
 
 		},
@@ -345,7 +353,7 @@ Example:
 		},
 
 		_playSound: function() {
-			if (this._player) {
+			if (this._player && this.state !== STATE.INIT) {
 				this._player.start();
 				this.state = STATE.PLAY;
 				this._startCounter();
@@ -361,8 +369,8 @@ Example:
 		},
 
 		_pauseSound: function() {
-			if (this._player) {
-				this._player.stop();
+			if (this._player && this.state === STATE.PLAY) {
+				this._player.pause();
 				this.state = STATE.STOP;
 
 				// Animate line
@@ -370,6 +378,11 @@ Example:
 				this.$.line.classList.remove('playing');
 				this.$.line.classList.remove('paused');
 			}
+		},
+
+		_getPlayerPlaybackPercentage: function() {
+			var playbackPercentage = (this._player._currentPosition / this.totalTime * 100) % 100;
+			return playbackPercentage;
 		},
 
 		_formatTime: function(timeInSeconds) {
@@ -386,12 +399,21 @@ Example:
 		},
 
 		_updateCounter: function() {
-			this.currentTime = (this._context.currentTime - this._counterStartTime);
+			this.currentTime = this._counterStartValue +
+				(this._context.currentTime - this._counterStartTime);
+
 			if (this.currentTime > this.totalTime) {
 				this.currentTime = this.totalTime;
 			}
+
 			if (this.state === STATE.PLAY) {
 				window.requestAnimationFrame(this._updateCounter.bind(this));
+			}else if (this.playMode === PLAY_MODE.HOLD) {
+				this._counterStartValue = this._player._currentPosition;
+				this.$.line.style.transform =
+					'translateX(' + this._getPlayerPlaybackPercentage() + '%)';
+			}else {
+				this._counterStartValue = 0;
 			}
 		},
 

@@ -65,7 +65,7 @@
 				forEach(buttons, function(thisButton) {
 					thisButton.keyPressHandler(evt);
 				});
-			}else if (document.activeElement.tagName === 'PAPER-DIALOG'){
+			}else if (document.activeElement.tagName === 'PAPER-DIALOG') {
 				if (evt.keyCode === 27) {
 					editor.close();
 				}

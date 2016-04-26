@@ -31,7 +31,6 @@ function AudioPlayer(context) {
 				} else {
 					this._player = this._context.createBufferSource();
 					this._player.buffer = this._buffer;
-					this._player.loop = this.playMode === 'hold';
 					this._player.onended = function() {
 						this.state = 'stop';
 					}.bind(this);
@@ -48,7 +47,6 @@ function AudioPlayer(context) {
 	Object.defineProperty(this, 'mode', {
 		set: function(newValue) {
 			if (newValue === 'trigger' || newValue === 'hold') {
-				this._player.loop = newValue === 'hold';
 				this._mode = newValue;
 			}
 		},
@@ -62,20 +60,22 @@ AudioPlayer.prototype.start = function() {
 
 	this._startTime = this._context.currentTime;
 
+	this._player.loop = this.mode === 'hold';
+
 	this._fader.gain.setValueAtTime(0, this._context.currentTime);
 	this._fader.gain.linearRampToValueAtTime(this._gain, this._context.currentTime + this._fadeIn);
 
 	this._player.start(this._context.currentTime, this._currentPosition);
 
-	this._fader.gain.setValueAtTime(this._gain,
-		this._context.currentTime + this.buffer.duration - this._fadeOut);
-	this._fader.gain.linearRampToValueAtTime(0, this._context.currentTime + this.buffer.duration);
-
 	if (this.mode === 'trigger') {
+
+		this._fader.gain.setValueAtTime(this._gain,
+			this._context.currentTime + this.buffer.duration - this._fadeOut);
+		this._fader.gain.linearRampToValueAtTime(0, this._context.currentTime + this.buffer.duration);
+
 		this._player = this._context.createBufferSource();
 		this._fader = this._context.createGain();
 		this._player.buffer = this._buffer;
-		this._player.loop = this.playMode === 'hold';
 		this._player.onended = function() {
 			this.state = 'stop';
 		}.bind(this);
@@ -91,7 +91,17 @@ AudioPlayer.prototype.pause = function() {
 	this._fader.gain.linearRampToValueAtTime(0, this._context.currentTime + this._fadeOut);
 	this._player.stop(this._context.currentTime + this._fadeOut);
 
-	this._currentPosition = this._context.currentTime - this._startTime;
+	this._currentPosition = (this._currentPosition + this._context.currentTime - this._startTime) % this._buffer.duration;
+	
+	if (this.mode === 'hold') {
+		this._player = this._context.createBufferSource();
+		this._player.buffer = this._buffer;
+		this._player.onended = function() {
+			this.state = 'stop';
+		}.bind(this);
+		this._player.connect(this._fader);
+		this._fader.connect(this._outputNode);
+	}
 };
 
 AudioPlayer.prototype.connect = function(outputNode) {
