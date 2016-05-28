@@ -91,8 +91,9 @@ AudioPlayer.prototype.pause = function() {
 	this._fader.gain.linearRampToValueAtTime(0, this._context.currentTime + this._fadeOut);
 	this._player.stop(this._context.currentTime + this._fadeOut);
 
-	this._currentPosition = (this._currentPosition + this._context.currentTime - this._startTime) % this._buffer.duration;
-	
+	this._currentPosition = (this._currentPosition + this._context.currentTime -
+		this._startTime) % this._buffer.duration;
+
 	if (this.mode === 'hold') {
 		this._player = this._context.createBufferSource();
 		this._player.buffer = this._buffer;
