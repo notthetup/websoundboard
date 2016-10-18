@@ -76,7 +76,7 @@ var optimizeHtmlTask = function(src, dest) {
     })))
     // Concatenate and minify styles
     // In case you are still using useref build blocks
-    .pipe($.if('*.css', $.minifyCss()))
+    .pipe($.if('*.css', $.cleanCss()))
     .pipe($.useref())
     // Minify any HTML
     .pipe($.if('*.html', $.minifyHtml({
