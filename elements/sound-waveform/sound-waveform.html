@@ -235,10 +235,16 @@ Example:
 		resetAnimation: function() {
 			this.$.line.classList.remove('playing');
 			this.$.line.classList.remove('paused');
+			if (this.playMode === PLAY_MODE.HOLD) {
+				this.$.line.classList.add('playing');
+				this.$.line.classList.add('paused');
+			}
 		},
 
 		keydown: function() {
-			this._playSound();
+			if (this.playMode !== PLAY_MODE.HOLD || this.state !== STATE.PLAY) {
+				this._playSound();
+			}
 		},
 
 		keyup: function() {
@@ -332,8 +338,10 @@ Example:
 				this._buffer = buffer;
 				this._player.buffer = this._buffer;
 				this.totalTime = this._buffer.duration;
+				this._counterStartValue = 0;
 				this._renderWaveform(this._buffer);
 				this.fire('sourceloaded', {buffer: this._buffer});
+				this.state = STATE.STOP;
 			}.bind(this));
 
 		},
@@ -345,9 +353,11 @@ Example:
 		},
 
 		_playSound: function() {
-			if (this._player) {
-				this._player.start();
+			if (this._player && this.state !== STATE.INIT) {
 				this.state = STATE.PLAY;
+				this._player.start(function() {
+          this.state = STATE.STOP;
+        }.bind(this));
 				this._startCounter();
 
 				// Animate line
@@ -361,8 +371,8 @@ Example:
 		},
 
 		_pauseSound: function() {
-			if (this._player) {
-				this._player.stop();
+			if (this._player && this.state === STATE.PLAY) {
+				this._player.pause();
 				this.state = STATE.STOP;
 
 				// Animate line
@@ -372,12 +382,17 @@ Example:
 			}
 		},
 
+		_getPlayerPlaybackPercentage: function() {
+			var playbackPercentage = (this._player._currentPosition / this.totalTime * 100) % 100;
+			return playbackPercentage;
+		},
+
 		_formatTime: function(timeInSeconds) {
 			var minutes = Math.floor(timeInSeconds / 60);
 			var seconds = Math.floor(timeInSeconds % 60);
 			var milliseconds = parseInt((timeInSeconds - (minutes * 60) - seconds) * 100);
 
-			return minutes + ':' + pad(seconds,2) + ':' + pad(milliseconds,2);
+			return minutes + ':' + pad(seconds, 2) + ':' + pad(milliseconds, 2);
 		},
 
 		_startCounter: function() {
@@ -386,12 +401,21 @@ Example:
 		},
 
 		_updateCounter: function() {
-			this.currentTime = (this._context.currentTime - this._counterStartTime);
+			this.currentTime = this._counterStartValue +
+				(this._context.currentTime - this._counterStartTime);
+
 			if (this.currentTime > this.totalTime) {
 				this.currentTime = this.totalTime;
 			}
+
 			if (this.state === STATE.PLAY) {
 				window.requestAnimationFrame(this._updateCounter.bind(this));
+			}else if (this.playMode === PLAY_MODE.HOLD) {
+				this._counterStartValue = this._player._currentPosition;
+				this.$.line.style.transform =
+					'translateX(' + this._getPlayerPlaybackPercentage() + '%)';
+			}else {
+				this._counterStartValue = 0;
 			}
 		},
 
