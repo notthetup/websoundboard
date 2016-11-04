@@ -354,8 +354,10 @@ Example:
 
 		_playSound: function() {
 			if (this._player && this.state !== STATE.INIT) {
-				this._player.start();
 				this.state = STATE.PLAY;
+				this._player.start(function() {
+          this.state = STATE.STOP;
+        }.bind(this));
 				this._startCounter();
 
 				// Animate line
